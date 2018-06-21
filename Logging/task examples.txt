@@ -1,0 +1,9 @@
+while true; do curl 127.0.0.1; sleep 1; done
+while true; do curl google.de; sleep 5; done
+while true; do curl amazon.de; sleep 5; done
+while true; do curl msdn.de; sleep 5; done
+while true; do curl hs-fulda.de; sleep 5; done
+ping 192.168.76.76
+while true; do ls -l; sleep 1; done
+
+while true; do ./check.sh; done

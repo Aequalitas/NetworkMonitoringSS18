@@ -1,10 +1,7 @@
 #!/bin/bash
 
-HOSTNAME="host2"
-
-
- echo "Content-type: application/json"
- echo ""
+echo "Content-type: application/json"
+echo ""
 
 echo "{"
 echo "  \"host\": \""$(echo $HOSTNAME)"\","

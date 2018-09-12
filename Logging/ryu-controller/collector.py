@@ -11,6 +11,7 @@ from ryu.ofproto import ofproto_v1_0
 
 import threading
 import time
+import json
 
 class reporter(threading.Thread):
    def __init__(self, threadID, reporterFunc, event, ports):
@@ -42,13 +43,17 @@ class port():
       self.txDropped = 0
       self.rxDropped = 0
 
+   def statsAsArray(self):
+      return [self.txPacks, self.rxPacks, self.txBytes, self.rxBytes, self.txDropped, self.rxDropped]
+
 class L2Switch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
        super(L2Switch, self).__init__(*args, **kwargs)
        self.ports = [port(2), port(3), port(4)]
-
+       self.allStats = {"port2":[], "port3":[], "port4":[]}
+       self.counter = 0
 
     # reply event for port stats of an VSwitch
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
@@ -76,6 +81,8 @@ class L2Switch(app_manager.RyuApp):
     # save new stats to json file
     def saveStatsToJSON(self, port):
        print("Saving to JSON")
+       with open('networkStats.json', 'w') as file:
+          json.dump(self.allStats, file)
 
     # extracts stats from stats message and updates port stats instance
     def saveStatsToPort(self, stats):
@@ -84,11 +91,20 @@ class L2Switch(app_manager.RyuApp):
          print("No port instance for this port number", stats.port_no) 
          return
 
-       print("PORT STATS", stats.port_no, stats.tx_packets-port.txPacks, stats.tx_bytes-port.txBytes, stats.tx_dropped-port.txDropped)
+       print("PORT STATS ", stats.port_no, stats.tx_packets-port.txPacks, stats.tx_bytes-port.txBytes, stats.tx_dropped-port.txDropped)
        port.txPacks = stats.tx_packets
        port.rxPacks = stats.rx_packets
        port.txBytes = stats.tx_bytes
        port.rxBytes = stats.rx_bytes
        port.txDropped = stats.tx_dropped
        port.rxDropped = stats.rx_dropped
-       self.saveStatsToJSON(port)
+
+       self.allStats["port"+str(port.id)].append([port.statsAsArray()])
+
+       if stats.port_no == 4:
+          self.counter += 1
+          print("STATS ROUND ", self.counter)
+
+       if self.counter >= 16000:
+          self.saveStatsToJSON()
+          exit()

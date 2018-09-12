@@ -28,9 +28,6 @@ class reporter(threading.Thread):
          for port in self._ports:
             self._reporterFunc(self._event.dp, port.id)
 
-         #self._reporterFunc(self._event.dp, 2)
-         #self._reporterFunc(self._event.dp, 3)
-         #self._reporterFunc(self._event.dp, 4)
          time.sleep(5)
 
       print("Exiting " + self.name)
@@ -51,14 +48,13 @@ class L2Switch(app_manager.RyuApp):
     def __init__(self, *args, **kwargs):
        super(L2Switch, self).__init__(*args, **kwargs)
        self.ports = [port(2), port(3), port(4)]
-       print(self.ports)
+
 
     # reply event for port stats of an VSwitch
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def portStatsReply(self, event):
         stats = event.msg.body[0]
-        print(stats)
-        self.saveStatstoJSON(stats)
+        self.saveStatsToPort(stats)
 
     # enter/leave event for a VSwitch
     @set_ev_cls(dpset.EventDP, MAIN_DISPATCHER)
@@ -78,8 +74,21 @@ class L2Switch(app_manager.RyuApp):
         console.log(ev.dp.id)
 
     # save new stats to json file
-    def saveStatstoJSON(self, stats):
+    def saveStatsToJSON(self, port):
+       print("Saving to JSON")
+
+    # extracts stats from stats message and updates port stats instance
+    def saveStatsToPort(self, stats):
        port = list(filter(lambda port: port.id == stats.port_no, self.ports))[0]
-       print("PORT STATS", stats.port_no, stats.tx_packets-port.txPacks, stats.rx_packets- port.rxPacks)
+       if port == None:
+         print("No port instance for this port number", stats.port_no) 
+         return
+
+       print("PORT STATS", stats.port_no, stats.tx_packets-port.txPacks, stats.tx_bytes-port.txBytes, stats.tx_dropped-port.txDropped)
        port.txPacks = stats.tx_packets
        port.rxPacks = stats.rx_packets
+       port.txBytes = stats.tx_bytes
+       port.rxBytes = stats.rx_bytes
+       port.txDropped = stats.tx_dropped
+       port.rxDropped = stats.rx_dropped
+       self.saveStatsToJSON(port)

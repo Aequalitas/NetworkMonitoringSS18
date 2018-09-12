@@ -19,7 +19,7 @@ class reporter(threading.Thread):
       self.name = "Reporter"
 
    def run(self):
-      print "Starting " + self.name +  " thread"
+      print("Starting " + self.name +  " thread")
       
       while True:
         self.reporterFunc(event.dp, 2)
@@ -27,14 +27,14 @@ class reporter(threading.Thread):
         self.reporterFunc(event.dp, 4)
         sleep(5)
 
-      print "Exiting " + self.name
+      print("Exiting " + self.name)
 
 class L2Switch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
 
     def __init__(self, *args, **kwargs):
         super(L2Switch, self).__init__(*args, **kwargs)
-        reporterThread = reporter(1, reqPortStats)
+        reporterThread = reporter(1, self.reqPortStats)
         reporterThread.start()
 
     # reply event for port stats of an VSwitch

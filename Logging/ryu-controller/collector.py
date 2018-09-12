@@ -43,8 +43,15 @@ class port():
       self.txDropped = 0
       self.rxDropped = 0
 
-   def statsAsArray(self):
-      return [self.txPacks, self.rxPacks, self.txBytes, self.rxBytes, self.txDropped, self.rxDropped]
+   def currStatsAsArray(self, stats):
+      return [
+                stats.tx_packets - self.txPacks,
+                stats.rx_packets - self.rxPacks,
+                stats.tx_bytes - self.txBytes,
+                stats.rx_bytes - self.rxBytes,
+                stats.tx_dropped - self.txDropped,
+                stats.rx_dropped - self.rxDropped
+             ]
 
 class L2Switch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
@@ -91,6 +98,8 @@ class L2Switch(app_manager.RyuApp):
          print("No port instance for this port number", stats.port_no) 
          return
 
+       self.allStats["port"+str(port.id)].append([port.currStatsAsArray(stats)])
+
        print("PORT STATS ", stats.port_no, stats.tx_packets-port.txPacks, stats.tx_bytes-port.txBytes, stats.tx_dropped-port.txDropped)
        port.txPacks = stats.tx_packets
        port.rxPacks = stats.rx_packets
@@ -98,8 +107,6 @@ class L2Switch(app_manager.RyuApp):
        port.rxBytes = stats.rx_bytes
        port.txDropped = stats.tx_dropped
        port.rxDropped = stats.rx_dropped
-
-       self.allStats["port"+str(port.id)].append([port.statsAsArray()])
 
        if stats.port_no == 4:
           self.counter += 1
